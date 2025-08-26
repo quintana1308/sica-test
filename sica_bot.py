@@ -857,8 +857,8 @@ def main():
     try:
         with SICABot() as bot:
             # Credenciales por defecto
-            username = "CBULLON"
-            password = "Cb17985096."
+            username = "IREYNA"
+            password = "Ir17274507."
             print(f"👤 Usuario: {username}")
             print(f"🔒 Contraseña: {password}")
             
