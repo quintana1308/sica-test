@@ -684,6 +684,506 @@ class SICABot:
         empresa = self.search_empresa_by_codigo(codigo_empresa, component_data)
         
         return empresa
+
+    def search_conductor_by_cedula(self, cedula_conductor, component_data):
+        """Buscar conductor por cédula usando Livewire"""
+        print(f"🔍 Buscando conductor con cédula: {cedula_conductor}")
+        
+        try:
+            # Headers específicos para el request
+            headers = {
+                'Accept': 'text/html, application/xhtml+xml',
+                'Content-Type': 'application/json',
+                'X-Livewire': 'true',
+                'X-CSRF-TOKEN': self.csrf_token,
+                'Referer': f"{self.base_url}/despachos/registrar",
+                'Origin': self.base_url,
+            }
+            
+            # Verificar que tenemos los datos críticos del component_data
+            server_memo = component_data.get("serverMemo", {})
+            html_hash = server_memo.get("htmlHash")
+            checksum = server_memo.get("checksum")
+            
+            if not html_hash or not checksum:
+                print("❌ Error: faltan htmlHash o checksum en serverMemo")
+                print(f"   htmlHash: {html_hash}")
+                print(f"   checksum: {checksum}")
+                return None
+            
+            print(f"🔧 Verificación serverMemo para búsqueda de conductor:")
+            print(f"   htmlHash: {html_hash}")
+            print(f"   checksum: {checksum[:20]}...")
+            
+            # Verificar que la empresa esté seleccionada
+            empresa_seleccionada = server_memo.get('data', {}).get('data', {}).get('THd2VHJ1QzNOWDVoUjlBRGZaSzIrZz09')
+            if not empresa_seleccionada:
+                print("❌ Error: No hay empresa seleccionada. Debe seleccionar empresa primero.")
+                return None
+            
+            print(f"✅ Empresa seleccionada: {empresa_seleccionada}")
+            
+            # CRÍTICO: Asegurar que serverMemo.data tenga TODOS los campos requeridos
+            # Basado en el request exitoso del documento
+            server_memo_data = server_memo.get('data', {})
+            
+            # Verificar y completar estructura de data según el documento exitoso
+            complete_data = server_memo_data.copy()
+            
+            # Asegurar que data.data tenga todos los campos del documento exitoso
+            data_fields = complete_data.get('data', {})
+            
+            # CRÍTICO: Asegurar que empresas tenga los datos de la empresa seleccionada
+            # El request exitoso muestra que empresas debe tener la información de la empresa
+            empresas_data = server_memo_data.get('empresas', [])
+            
+            # Si empresas está vacío pero tenemos empresa seleccionada, necesitamos reconstruir
+            if not empresas_data and empresa_seleccionada:
+                print("⚠️ Array empresas vacío pero empresa seleccionada. Intentando reconstruir...")
+                # Buscar en archivos guardados la información de la empresa
+                try:
+                    import os
+                    if os.path.exists('empresa_seleccionada.json'):
+                        with open('empresa_seleccionada.json', 'r', encoding='utf-8') as f:
+                            empresa_data = json.load(f)
+                            if 'empresa' in empresa_data:
+                                empresa_info = empresa_data['empresa']
+                                empresas_data = [{
+                                    "id": empresa_info.get('id'),
+                                    "codigo": empresa_info.get('codigo'),
+                                    "rif": empresa_info.get('rif'),
+                                    "razon_social": empresa_info.get('razon_social'),
+                                    "tipo_ente": empresa_info.get('tipo_ente'),
+                                    "nivel": empresa_info.get('nivel')
+                                }]
+                                print(f"✅ Información de empresa reconstruida: {empresa_info.get('razon_social')}")
+                except Exception as e:
+                    print(f"⚠️ No se pudo reconstruir información de empresa: {e}")
+            
+            # Asegurar que existan todos los arrays requeridos según el documento
+            if 'empresas' not in complete_data:
+                complete_data['empresas'] = empresas_data
+            else:
+                # Actualizar con datos reconstruidos si es necesario
+                if not complete_data['empresas'] and empresas_data:
+                    complete_data['empresas'] = empresas_data
+                    
+            if 'conductores' not in complete_data:
+                complete_data['conductores'] = server_memo_data.get('conductores', [])
+            if 'vehiculos' not in complete_data:
+                complete_data['vehiculos'] = server_memo_data.get('vehiculos', [])
+            if 'rubros_' not in complete_data:
+                complete_data['rubros_'] = server_memo_data.get('rubros_', [])
+            if 'anios_cuspal' not in complete_data:
+                complete_data['anios_cuspal'] = ["2021","2022","2023","2024","2025"]
+            if 'meses_cuspal' not in complete_data:
+                complete_data['meses_cuspal'] = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+            
+            print(f"🔧 Estructura serverMemo.data completada:")
+            print(f"   empresas: {len(complete_data.get('empresas', []))}")
+            print(f"   conductores: {len(complete_data.get('conductores', []))}")
+            print(f"   vehiculos: {len(complete_data.get('vehiculos', []))}")
+            print(f"   rubros_: {len(complete_data.get('rubros_', []))}")
+            print(f"   anios_cuspal: {len(complete_data.get('anios_cuspal', []))}")
+            print(f"   meses_cuspal: {len(complete_data.get('meses_cuspal', []))}")
+            
+            # Crear serverMemo completo con la estructura correcta
+            complete_server_memo = {
+                "children": server_memo.get('children', {}),
+                "errors": server_memo.get('errors', []),
+                "htmlHash": server_memo.get('htmlHash'),
+                "data": complete_data,
+                "dataMeta": server_memo.get('dataMeta', []),
+                "checksum": server_memo.get('checksum')
+            }
+            
+            # Construir payload basado en el ejemplo del documento
+            payload = {
+                "fingerprint": component_data["fingerprint"],
+                "serverMemo": complete_server_memo,
+                "updates": [
+                    {
+                        "type": "syncInput",
+                        "payload": {
+                            "id": "b3k7",  # ID del input según el documento
+                            "name": "data.dFZpVGlDZU1rK2xmOE5GYTB2UTF2dz09",  # Campo de la cédula
+                            "value": str(cedula_conductor)
+                        }
+                    },
+                    {
+                        "type": "callMethod",
+                        "payload": {
+                            "id": "2rps",  # ID del método según el documento
+                            "method": "searchConductorCedula",
+                            "params": []
+                        }
+                    }
+                ]
+            }
+            
+            # Obtener component name del fingerprint
+            component_name = component_data["fingerprint"].get("name", "")
+            if not component_name:
+                print("❌ No se pudo obtener component_name del fingerprint")
+                return None
+            
+            print(f"🔧 Usando component_name: {component_name[:50]}...")
+            
+            # URL del endpoint
+            url = f"{self.base_url}/api/app/{component_name}"
+            
+            print(f"🌐 Enviando request de búsqueda de conductor a: {url}")
+            print(f"📦 Payload: {json.dumps(payload, indent=2)}")
+            
+            response = self.session.post(url, json=payload, headers=headers)
+            
+            print(f"📊 Status Code: {response.status_code}")
+            print(f"📄 Response Headers: {dict(response.headers)}")
+            
+            if response.status_code != 200:
+                print(f"❌ Error HTTP {response.status_code}: {response.text}")
+                return None
+            
+            try:
+                result = response.json()
+                print(f"✅ Response JSON recibido: {json.dumps(result, indent=2)[:500]}...")
+            except json.JSONDecodeError as e:
+                print(f"❌ Error decodificando JSON: {e}")
+                print(f"📄 Response text: {response.text[:500]}...")
+                return None
+            
+            # Extraer datos del conductor de la respuesta
+            conductores = result.get('serverMemo', {}).get('data', {}).get('conductores', [])
+            
+            if conductores:
+                conductor = conductores[0]  # Tomar el primer conductor encontrado
+                print("✅ Conductor encontrado:")
+                print(f"   🆔 ID: {conductor.get('id')}")
+                print(f"   📄 Cédula: {conductor.get('cedula')}")
+                print(f"   👤 Nombre: {conductor.get('nombre')}")
+                print(f"   👤 Apellido: {conductor.get('apellido')}")
+                
+                # Actualizar component_data con la nueva información
+                if 'serverMemo' in result:
+                    component_data['serverMemo'] = result['serverMemo']
+                
+                # Guardar la información del conductor para referencia
+                with open('conductor_encontrado.json', 'w', encoding='utf-8') as f:
+                    json.dump(conductor, f, indent=2, ensure_ascii=False)
+                print(f"💾 Datos de conductor guardados en 'conductor_encontrado.json'")
+                
+                return conductor
+            else:
+                print("❌ No se encontró conductor con esa cédula")
+                return None
+            
+        except Exception as e:
+            print(f"❌ Error buscando conductor: {e}")
+            return None
+
+    def select_conductor(self, conductor_id, component_data):
+        """Seleccionar un conductor específico por su ID"""
+        print(f"🎯 Seleccionando conductor con ID: {conductor_id}")
+        
+        try:
+            # Headers específicos para Livewire
+            headers = {
+                'Accept': 'text/html, application/xhtml+xml',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Accept-Language': 'es-ES,es;q=0.9',
+                'Connection': 'keep-alive',
+                'Content-Type': 'application/json',
+                'Host': 'sica.sunagro.gob.ve',
+                'Origin': 'https://sica.sunagro.gob.ve',
+                'Referer': 'https://sica.sunagro.gob.ve/despachos/registrar',
+                'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Gpc': '1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+                'X-Csrf-Token': self.csrf_token,
+                'X-Livewire': 'true'
+            }
+            
+            # CONSTRUIR SERVERMEMO COMPLETO SEGÚN EL DOCUMENTO
+            original_server_memo = component_data.get("serverMemo", {})
+            
+            # Construir serverMemo COMPLETO con estructura exacta del documento
+            original_data = original_server_memo.get("data", {})
+            
+            # Construir data COMPLETO con todas las secciones del documento
+            # CRÍTICO: Las empresas DEBEN existir para que funcione la selección
+            empresas_dinamicas = original_data.get("empresas", [])
+            if not empresas_dinamicas:
+                # Si no hay empresas en el contexto, usar la empresa del estado actual del bot
+                if hasattr(self, 'empresa_seleccionada') and self.empresa_seleccionada:
+                    empresas_dinamicas = [self.empresa_seleccionada]
+                else:
+                    # Fallback: buscar información completa de empresa previamente seleccionada
+                    try:
+                        import os
+                        if os.path.exists('empresa_seleccionada.json'):
+                            with open('empresa_seleccionada.json', 'r', encoding='utf-8') as f:
+                                empresa_data = json.load(f)
+                                if 'empresa' in empresa_data:
+                                    empresas_dinamicas = [empresa_data['empresa']]
+                                    print("✅ Empresa recuperada de archivo guardado")
+                        
+                        # Si no se pudo recuperar del archivo, intentar reconstruir mínimamente
+                        if not empresas_dinamicas:
+                            data_section = original_data.get("data", {})
+                            empresa_id = data_section.get("THd2VHJ1QzNOWDVoUjlBRGZaSzIrZz09", "")
+                            codigo_empresa = data_section.get("cWFjL1BPYjFSMHBuMWkxbi9PZ0dxdz09", "")
+                            if empresa_id and codigo_empresa:
+                                print("⚠️ No se encontró información completa de empresa. Usando datos mínimos.")
+                                empresas_dinamicas = [{
+                                    "id": empresa_id,
+                                    "codigo": int(codigo_empresa) if codigo_empresa.isdigit() else None
+                                }]
+                    except Exception as e:
+                        print(f"⚠️ Error al recuperar información de empresa: {e}")
+                        # Como último recurso, usar array vacío y que el servidor maneje el error
+                        empresas_dinamicas = []
+            
+            complete_data = {
+                "data": original_data.get("data", {}),  # Usar data dinámico actual
+                "empresas": empresas_dinamicas,  # Empresas dinámicas con fallback inteligente
+                "conductores": original_data.get("conductores", []),  # Usar conductores dinámicos
+                "vehiculos": original_data.get("vehiculos", []),  # Usar vehiculos dinámicos
+                "rubros_": original_data.get("rubros_", []),  # Usar rubros dinámicos
+                "anios_cuspal": original_data.get("anios_cuspal", ["2021", "2022", "2023", "2024", "2025"]),  # Dinámico con fallback
+                "meses_cuspal": original_data.get("meses_cuspal", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])  # Dinámico con fallback
+            }
+            
+            complete_server_memo = {
+                "children": {
+                    "l2055706833-0": {"id": "n2S5ZGS8lqe7yGG1IHXD", "tag": "div"},
+                    "l2055706833-1": {"id": "M9IKeJCPxiKwtaJTOnQv", "tag": "div"}
+                },
+                "errors": [],
+                "htmlHash": "859bb9ac",  # Hash exacto del documento
+                "data": complete_data,  # Data COMPLETO con todas las secciones
+                "dataMeta": [],
+                "checksum": "2294cb9befc40c44c863f3cc4694ec453508a98ebc44580e5297413b42bcd423"  # Checksum exacto
+            }
+            
+            print(f"🔧 ServerMemo original checksum: {original_server_memo.get('checksum', 'N/A')}")
+            print(f"🔧 ServerMemo COMPLETO checksum: {complete_server_memo.get('checksum')}")
+            print(f"🔧 Conductor ID a seleccionar: {conductor_id}")
+            
+            # Construir payload con fingerprint y serverMemo EXACTOS del documento
+            payload = {
+                "fingerprint": {
+                    "id": "uzayRnVAtIeEl6rcrPxw",  # ID exacto del documento
+                    "name": "eyJpdiI6IkFoWmpPNE9XUEJHWlZlZ3FycVllS3c9PSIsInZhbHVlIjoiTVd2QUVLUjZMNWszNElkbFFWWUxPQXZMNUMyTHdRVCsrSm00akRZVklqbz0iLCJtYWMiOiI5MGJiNDJlNjE1NmM0MGJiMjdjZDc0ZjVlOGZkZWE3MTI2NjJhODljZDRhMDlhYmI1NzIyOWFiOGQ2ZmVlOWY5IiwidGFnIjoiIn0=",
+                    "locale": "es",
+                    "path": "despachos/registrar", 
+                    "method": "GET",
+                    "v": "acj"
+                },
+                "serverMemo": complete_server_memo,  # ServerMemo completo con children y errors
+                "updates": [
+                    {
+                        "type": "callMethod",
+                        "payload": {
+                            "id": "zkm8",
+                            "method": "__method",
+                            "params": [
+                                "YTJnWEJUbmZ4UVR1NWtydHdXZWtGM1hxVGIwQ2xlTXVzNTlZcllCL0xVYz0%3D",
+                                conductor_id
+                            ]
+                        }
+                    }
+                ]
+            }
+            
+            # Usar component name EXACTO del documento
+            component_name = "eyJpdiI6IkFoWmpPNE9XUEJHWlZlZ3FycVllS3c9PSIsInZhbHVlIjoiTVd2QUVLUjZMNWszNElkbFFWWUxPQXZMNUMyTHdRVCsrSm00akRZVklqbz0iLCJtYWMiOiI5MGJiNDJlNjE1NmM0MGJiMjdjZDc0ZjVlOGZkZWE3MTI2NjJhODljZDRhMDlhYmI1NzIyOWFiOGQ2ZmVlOWY5IiwidGFnIjoiIn0="
+            
+            print(f"🔧 Usando component_name EXACTO del documento: {component_name[:50]}...")
+            
+            # URL del endpoint
+            url = f"{self.base_url}/api/app/{component_name}"
+            
+            print(f"🌐 Enviando request de selección de conductor a: {url}")
+            print(f"📦 Payload de selección EXACTO: {json.dumps(payload, indent=2)}")
+            
+            response = self.session.post(url, json=payload, headers=headers)
+            
+            print(f"📊 Status Code: {response.status_code}")
+            print(f"📄 Response Headers: {dict(response.headers)}")
+            
+            if response.status_code != 200:
+                print(f"❌ Error HTTP {response.status_code}: {response.text}")
+                # Guardar respuesta de error para análisis
+                with open('error_seleccion_conductor.html', 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                print("💾 Respuesta de error guardada en 'error_seleccion_conductor.html'")
+                return None
+            
+            try:
+                result = response.json()
+                print(f"✅ Response JSON recibido: {json.dumps(result, indent=2)}")
+            except json.JSONDecodeError as e:
+                print(f"❌ Error decodificando JSON: {e}")
+                print(f"📄 Response text: {response.text[:500]}...")
+                return None
+            
+            # Verificar si la selección fue exitosa
+            effects = result.get('effects', {})
+            emits = effects.get('emits', [])
+            
+            # Buscar mensaje de éxito
+            success_found = False
+            for emit in emits:
+                if emit.get('event') == 'alert' and 'success' in emit.get('params', []):
+                    success_found = True
+                    print("✅ Conductor seleccionado exitosamente!")
+                    print(f"   📢 Mensaje: {emit.get('params', [])[1] if len(emit.get('params', [])) > 1 else 'N/A'}")
+                    break
+            
+            if not success_found:
+                print("⚠️ No se encontró confirmación de éxito en la respuesta")
+            
+            # Actualizar component_data con la nueva información del serverMemo
+            if 'serverMemo' in result:
+                component_data['serverMemo'] = result['serverMemo']
+                print("🔄 ServerMemo actualizado con nueva información")
+            
+            # Guardar respuesta completa para análisis
+            with open('seleccion_conductor_response.json', 'w', encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+            print("💾 Respuesta de selección guardada en 'seleccion_conductor_response.json'")
+            
+            return result
+            
+        except Exception as e:
+            print(f"❌ Error seleccionando conductor: {e}")
+            return None
+
+    def proceso_busqueda_y_seleccion_conductor(self, component_data):
+        """Proceso completo de búsqueda y selección de conductor (requiere empresa ya seleccionada)"""
+        print("🔍 Iniciando proceso de búsqueda y selección de conductor...")
+        
+        # Verificar que component_data tenga empresa seleccionada
+        if not component_data:
+            print("❌ Error: No se proporcionó component_data")
+            return None
+        
+        server_memo = component_data.get("serverMemo", {})
+        empresa_seleccionada = server_memo.get('data', {}).get('data', {}).get('THd2VHJ1QzNOWDVoUjlBRGZaSzIrZz09')
+        
+        if not empresa_seleccionada:
+            print("❌ Error: Debe seleccionar una empresa antes de buscar conductor")
+            return None
+        
+        print(f"✅ Empresa seleccionada verificada: {empresa_seleccionada}")
+        
+        # Pedir cédula de conductor por consola
+        while True:
+            try:
+                cedula_input = input("👤 Ingresa el número de documento del conductor (ej: V-25526479): ").strip()
+                
+                # Validar formato básico de cédula venezolana
+                if cedula_input:
+                    # Permitir formatos como V-12345678, V12345678, 12345678
+                    cedula_clean = cedula_input.upper().replace('-', '').replace(' ', '')
+                    
+                    # Si no tiene letra, agregar V por defecto
+                    if cedula_clean.isdigit():
+                        cedula_formatted = f"V-{cedula_clean}"
+                    elif cedula_clean.startswith(('V', 'E', 'J', 'G', 'P')):
+                        # Formatear con guión si no lo tiene
+                        if '-' not in cedula_input:
+                            cedula_formatted = f"{cedula_clean[0]}-{cedula_clean[1:]}"
+                        else:
+                            cedula_formatted = cedula_input.upper()
+                    else:
+                        print("❌ Formato de cédula inválido. Use formato: V-12345678")
+                        continue
+                    
+                    print(f"🔧 Cédula formateada: {cedula_formatted}")
+                    break
+                else:
+                    print("❌ Por favor ingresa una cédula válida")
+            except KeyboardInterrupt:
+                print("\n❌ Operación cancelada")
+                return None
+        
+        # Buscar conductor
+        print(f"\n🔍 Buscando conductor con cédula: {cedula_formatted}")
+        conductor_result = self.search_conductor_by_cedula(cedula_formatted, component_data)
+        
+        if conductor_result:
+            print("🎉 ¡Conductor encontrado exitosamente!")
+            
+            # Preguntar si desea seleccionar el conductor encontrado
+            print(f"\n📋 Conductor encontrado:")
+            print(f"   🆔 ID: {conductor_result.get('id')}")
+            print(f"   📄 Cédula: {conductor_result.get('cedula')}")
+            print(f"   👤 Nombre: {conductor_result.get('nombre')} {conductor_result.get('apellido')}")
+            
+            while True:
+                try:
+                    seleccionar = input("\n¿Desea seleccionar este conductor? (s/n): ").strip().lower()
+                    if seleccionar in ['s', 'si', 'sí', 'y', 'yes']:
+                        # Seleccionar el conductor
+                        print(f"\n🎯 Seleccionando conductor...")
+                        selection_result = self.select_conductor(conductor_result.get('id'), component_data)
+                        
+                        if selection_result:
+                            print("✅ ¡Conductor seleccionado exitosamente!")
+                            
+                            # Guardar resultado completo
+                            complete_result = {
+                                'conductor': conductor_result,
+                                'selection_response': selection_result,
+                                'component_data': component_data,
+                                'cedula_buscada': cedula_formatted,
+                                'estado': 'SELECCIONADO'
+                            }
+                            
+                            with open('conductor_seleccionado.json', 'w', encoding='utf-8') as f:
+                                json.dump(complete_result, f, indent=2, ensure_ascii=False)
+                            print("💾 Resultado completo guardado en 'conductor_seleccionado.json'")
+                            
+                            return complete_result
+                        else:
+                            print("❌ Error al seleccionar conductor")
+                            return None
+                        
+                    elif seleccionar in ['n', 'no']:
+                        print("⚠️ Conductor no seleccionado")
+                        # Guardar resultado solo de búsqueda
+                        search_result = {
+                            'conductor': conductor_result,
+                            'component_data': component_data,
+                            'cedula_buscada': cedula_formatted,
+                            'estado': 'ENCONTRADO_NO_SELECCIONADO'
+                        }
+                        
+                        with open('conductor_encontrado.json', 'w', encoding='utf-8') as f:
+                            json.dump(search_result, f, indent=2, ensure_ascii=False)
+                        print("💾 Resultado de búsqueda guardado en 'conductor_encontrado.json'")
+                        
+                        return search_result
+                    else:
+                        print("❌ Por favor responda 's' para sí o 'n' para no")
+                        continue
+                    break
+                except KeyboardInterrupt:
+                    print("\n❌ Operación cancelada")
+                    return None
+        else:
+            print("❌ No se encontró conductor o error en búsqueda")
+            return None
+
+    def proceso_busqueda_conductor(self, component_data):
+        """Proceso de solo búsqueda de conductor (sin selección automática)"""
+        return self.proceso_busqueda_y_seleccion_conductor(component_data)
         
     
     def make_livewire_request(self, component_name, method_params="cTZRVCtiWmwrSVlGMGpOa3FMZFBjQT09"):
@@ -857,8 +1357,8 @@ def main():
     try:
         with SICABot() as bot:
             # Credenciales por defecto
-            username = "IREYNA"
-            password = "Ir17274507."
+            username = "CBULLON"
+            password = "Cb17985096."
             print(f"👤 Usuario: {username}")
             print(f"🔒 Contraseña: {password}")
             
@@ -904,6 +1404,39 @@ def main():
                         print("   ✅ Estado: SELECCIONADA")
                         
                         print("\n✅ Búsqueda y selección completadas exitosamente")
+                        
+                        # Proceso de búsqueda y selección de conductor (después de seleccionar empresa)
+                        print("\n" + "="*50)
+                        print("👤 BÚSQUEDA Y SELECCIÓN DE CONDUCTOR")
+                        print("="*50)
+                        
+                        component_data = resultado.get('component_data')
+                        if component_data:
+                            resultado_conductor = bot.proceso_busqueda_y_seleccion_conductor(component_data)
+                            
+                            if resultado_conductor:
+                                conductor = resultado_conductor['conductor']
+                                estado = resultado_conductor.get('estado', 'DESCONOCIDO')
+                                
+                                print(f"\n🎉 Proceso de conductor exitoso:")
+                                print(f"   🆔 ID: {conductor.get('id')}")
+                                print(f"   📄 Cédula: {conductor.get('cedula')}")
+                                print(f"   👤 Nombre: {conductor.get('nombre')}")
+                                print(f"   👤 Apellido: {conductor.get('apellido')}")
+                                print(f"   ✅ Estado: {estado}")
+                                
+                                if estado == 'SELECCIONADO':
+                                    print("\n🎯 ¡Conductor seleccionado exitosamente!")
+                                    print("   📋 El conductor está listo para el siguiente paso del proceso")
+                                elif estado == 'ENCONTRADO_NO_SELECCIONADO':
+                                    print("\n⚠️ Conductor encontrado pero no seleccionado")
+                                    print("   📋 Para continuar, deberá seleccionar un conductor")
+                                
+                                print(f"\n✅ Proceso de conductor completado - Estado: {estado}")
+                            else:
+                                print("❌ No se encontró conductor o error en búsqueda")
+                        else:
+                            print("❌ Error: No se pudo obtener component_data para búsqueda de conductor")
                     else:
                         # Solo búsqueda, sin selección
                         print("\n✅ Empresa encontrada (sin seleccionar):")
@@ -914,6 +1447,7 @@ def main():
                         print(f"   📊 Nivel: {resultado.get('nivel')}")
                         
                         print("\n✅ Búsqueda completada exitosamente")
+                        print("⚠️ Nota: Para buscar conductor, debe seleccionar la empresa primero")
                 else:
                     print("❌ No se encontró empresa o error en búsqueda")
             else:

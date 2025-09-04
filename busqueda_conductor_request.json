@@ -1,0 +1,76 @@
+{
+  "url": "https://sica.sunagro.gob.ve/api/app/eyJpdiI6IlNINVNDVkVaNlBidk00UFZyVHYxK2c9PSIsInZhbHVlIjoic2FFZis1TDJBNks0azBWZjM3WVoyZjFqWFFQNCtnQWpFM1JkNWRnaE1Kdz0iLCJtYWMiOiI0ZTc1ZDI5M2FjN2JjOGRkZmVlMjUxMTY1MWNlNTQ4ZmNiMWY4YWZlOTAwMzMzZjY3NGQ3MDU1M2NmYTk2YzIzIiwidGFnIjoiIn0=",
+  "headers": {
+    "Accept": "text/html, application/xhtml+xml",
+    "Content-Type": "application/json",
+    "X-Livewire": "true",
+    "X-CSRF-TOKEN": "ixXz2UqmlR7Bfdx9pRyzWObzmYKn1EfysLq3ZEqk",
+    "Referer": "https://sica.sunagro.gob.ve/despachos/registrar",
+    "Origin": "https://sica.sunagro.gob.ve"
+  },
+  "payload": {
+    "fingerprint": {
+      "id": "jFy7PJlFvmeSIp0pB9Ej",
+      "name": "eyJpdiI6IlNINVNDVkVaNlBidk00UFZyVHYxK2c9PSIsInZhbHVlIjoic2FFZis1TDJBNks0azBWZjM3WVoyZjFqWFFQNCtnQWpFM1JkNWRnaE1Kdz0iLCJtYWMiOiI0ZTc1ZDI5M2FjN2JjOGRkZmVlMjUxMTY1MWNlNTQ4ZmNiMWY4YWZlOTAwMzMzZjY3NGQ3MDU1M2NmYTk2YzIzIiwidGFnIjoiIn0=",
+      "locale": "es",
+      "path": "despachos/registrar",
+      "method": "GET",
+      "v": "acj"
+    },
+    "serverMemo": {
+      "children": {
+        "l2055706833-0": {
+          "id": "NHZ638JzYAqltX6cVOVk",
+          "tag": "div"
+        },
+        "l2055706833-1": {
+          "id": "eLia1BjtMbYJQxwdAze0",
+          "tag": "div"
+        }
+      },
+      "htmlHash": "2aa86bce",
+      "data": {
+        "data": {
+          "UERwY2ZvMm54ck1Hem9yWUwvZmJZdz09": "",
+          "UVEyRXZsaE9BMk9kUHZtVTd0cS85QT09": "",
+          "QW5jemd4alB1WllDWjczbGFQaUpBUT09": "",
+          "QjVzNkJoc216QUxDNVM0MzJVNDlRdz09": "",
+          "SklYOFdOY082VFRjamE0TFJuNC9YZz09": "",
+          "cWFjL1BPYjFSMHBuMWkxbi9PZ0dxdz09": "881213",
+          "dFZpVGlDZU1rK2xmOE5GYTB2UTF2dz09": "",
+          "MkNMdzRrM0JqeUUxUm1lWUJoNmFZQT09": "",
+          "bTBZOW5WRVUrRGdVZ1JlM05EQ1lsQT09": "",
+          "dXFLNWlDbnRVelZPSTRBa2IyV2g4Zz09": "",
+          "WHlvWDNuaFpuQ2lpN1lLOXV4OVgxUT09": "",
+          "TDBiQUdSbFI2WXV6L051dGJtdlNudz09": 1,
+          "THd2VHJ1QzNOWDVoUjlBRGZaSzIrZz09": "ZW5MNnM2dXIzY2h2NS91Smk1YmVGUT09",
+          "cW1YY01CcUNNRStMZDZoRzgvazJSdz09": false,
+          "U2ZqVERaeEE3SXZHenArWWNPZDNaQT09": "",
+          "T1ZiK2RqbnZJS0tJd0t6ZXJNMjJlQT09": "",
+          "YjFLVzREcHdXaURKZmk0YXpuS1FiZz09": "",
+          "amhPaGg0c3k2YVUwa1RLN2VieFRvdz09": "",
+          "cVhsY2ptSk1GRHc5Q1llaXM5Zittdz09": ""
+        }
+      },
+      "checksum": "30fecce37b09e474c2445f2bebd968d235b4c66106f19db2f62eb34d78b13855"
+    },
+    "updates": [
+      {
+        "type": "syncInput",
+        "payload": {
+          "id": "tggt",
+          "name": "data.dFZpVGlDZU1rK2xmOE5GYTB2UTF2dz09",
+          "value": "V-25526479"
+        }
+      },
+      {
+        "type": "callMethod",
+        "payload": {
+          "id": "ks38",
+          "method": "searchConductorCedula",
+          "params": []
+        }
+      }
+    ]
+  }
+}
