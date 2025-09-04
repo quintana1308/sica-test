@@ -53,8 +53,8 @@
   },
   "component_data": {
     "fingerprint": {
-      "id": "m26Iz8QNCZkCNnBeFBei",
-      "name": "eyJpdiI6IlJNT0dKS1VsYjJOWW5SY2kxeW1IYUE9PSIsInZhbHVlIjoiaXc4MFJDVmk1K2Q5Yk1OZkxvMWlNWEdjQ1FSUDBDTXQzWlNXVXJUSkh0QT0iLCJtYWMiOiI2NGIzNTZkMjg4ZmNmZmNjMWViNTRiMGIwNjFhYzkzNTYxMmYwMmQ5YjQ1ZTFmOWIwN2IzOGFmZjVkZDFkNTc0IiwidGFnIjoiIn0=",
+      "id": "FBGustXYrMBwUDRRQXBW",
+      "name": "eyJpdiI6IlIwVGxJQmcxakFDaGh6UFRJUmdHTVE9PSIsInZhbHVlIjoiK2RrbVA3L1hBbFU3ZGxsZmtQZkpHTllZZXZFb25lSUxWVTgvc3V4bjBBTT0iLCJtYWMiOiIxOThmMTQxOWQ5Y2Q5NDM0OTk4ODM5YWQ1MTEwYWU5ZWY4Y2VjZDA3YjgwZjI0MjkwZWE1M2EyY2QxOTVmNmE0IiwidGFnIjoiIn0=",
       "locale": "es",
       "path": "despachos/registrar",
       "method": "GET",

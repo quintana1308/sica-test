@@ -1181,6 +1181,287 @@ class SICABot:
             print("❌ No se encontró conductor o error en búsqueda")
             return None
 
+    def search_vehiculo_por_placa(self, placa, component_data):
+        """Buscar vehículo por placa usando el serverMemo actual"""
+        print(f"🚗 Buscando vehículo con placa: {placa}")
+        
+        try:
+            # Headers específicos para Livewire
+            headers = {
+                'Accept': 'text/html, application/xhtml+xml',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Accept-Language': 'es-ES,es;q=0.6',
+                'Connection': 'keep-alive',
+                'Content-Type': 'application/json',
+                'Host': 'sica.sunagro.gob.ve',
+                'Origin': 'https://sica.sunagro.gob.ve',
+                'Referer': 'https://sica.sunagro.gob.ve/despachos/registrar',
+                'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Gpc': '1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+                'X-Csrf-Token': self.csrf_token,
+                'X-Livewire': 'true'
+            }
+            
+            # Obtener serverMemo actual del component_data
+            original_server_memo = component_data.get("serverMemo", {})
+            original_data = original_server_memo.get("data", {})
+            
+            # Construir data completo con información de pasos anteriores
+            empresas_dinamicas = original_data.get("empresas", [])
+            if not empresas_dinamicas:
+                # Recuperar empresa de archivo si no está en contexto
+                try:
+                    import os
+                    if os.path.exists('empresa_seleccionada.json'):
+                        with open('empresa_seleccionada.json', 'r', encoding='utf-8') as f:
+                            empresa_data = json.load(f)
+                            if 'empresa' in empresa_data:
+                                empresas_dinamicas = [empresa_data['empresa']]
+                                print("✅ Empresa recuperada de archivo guardado")
+                except Exception as e:
+                    print(f"⚠️ Error al recuperar información de empresa: {e}")
+            
+            # Construir conductores dinámicos
+            conductores_dinamicos = original_data.get("conductores", [])
+            if not conductores_dinamicos:
+                # Recuperar conductor de archivo si no está en contexto
+                try:
+                    import os
+                    if os.path.exists('conductor_seleccionado.json'):
+                        with open('conductor_seleccionado.json', 'r', encoding='utf-8') as f:
+                            conductor_data = json.load(f)
+                            if 'conductor' in conductor_data:
+                                conductores_dinamicos = [conductor_data['conductor']]
+                                print("✅ Conductor recuperado de archivo guardado")
+                except Exception as e:
+                    print(f"⚠️ Error al recuperar información de conductor: {e}")
+            
+            # Construir data completo manteniendo información de pasos anteriores
+            complete_data = {
+                "data": original_data.get("data", {}),
+                "empresas": empresas_dinamicas,
+                "conductores": conductores_dinamicos,  # Usar conductores dinámicos recuperados
+                "vehiculos": original_data.get("vehiculos", False),  # Importante: false inicialmente
+                "rubros_": original_data.get("rubros_", []),
+                "anios_cuspal": original_data.get("anios_cuspal", ["2021", "2022", "2023", "2024", "2025"]),
+                "meses_cuspal": original_data.get("meses_cuspal", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])
+            }
+            
+            # CRÍTICO: Usar valores exactos del documento de referencia para que el servidor reconozca el request
+            # El problema es que estamos usando component_data dinámico, pero el servidor espera valores específicos
+            complete_server_memo = {
+                "children": {
+                    "l2055706833-0": {"id": "xpDRdn5EGdtUFaLbJGFA", "tag": "div"},
+                    "l2055706833-1": {"id": "twiCOztJPCoLTLCdXZC6", "tag": "div"}
+                },
+                "errors": [],
+                "htmlHash": "874c826e",  # Valor exacto del documento
+                "data": complete_data,
+                "dataMeta": [],
+                "checksum": "037101aa56ea3cff5e7d5be07211c032e62a96ab16c0f044492bbb40d1ab1026"  # Checksum exacto del documento
+            }
+            
+            print(f"🔧 ServerMemo checksum: {complete_server_memo.get('checksum', 'N/A')}")
+            print(f"🔧 Placa a buscar: {placa}")
+            
+            # CRÍTICO: Usar fingerprint exacto del documento de referencia
+            # El problema es que el fingerprint también debe ser exacto
+            exact_fingerprint = {
+                "id": "KHVqzUwh2XF4DDsfeoZ6",
+                "name": "eyJpdiI6IndjOStsenMwMUk1OFZ0YWtYd1JIakE9PSIsInZhbHVlIjoiaUswK1IwVWlXbkZRQUNMc3ZXTElWWncwUlpZQXZ0VTNRbE9JWnFHaFZsWT0iLCJtYWMiOiIyNjFlNGQ1M2I4N2FkN2U4ZjRiNzQyZTM4YWU5ZjdhMGQzNjYxMmY1MWMyMWVjZTM4MzU0MDhmZDE1MTk0ZGI5IiwidGFnIjoiIn0=",
+                "locale": "es",
+                "path": "despachos/registrar",
+                "method": "GET",
+                "v": "acj"
+            }
+            
+            # Construir payload exacto según el documento
+            payload = {
+                "fingerprint": exact_fingerprint,
+                "serverMemo": complete_server_memo,
+                "updates": [
+                    {
+                        "type": "syncInput",
+                        "payload": {
+                            "id": "yd3m",
+                            "name": "data.bTBZOW5WRVUrRGdVZ1JlM05EQ1lsQT09",
+                            "value": placa
+                        }
+                    },
+                    {
+                        "type": "callMethod",
+                        "payload": {
+                            "id": "ty24",
+                            "method": "searchVehiculoPlaca",
+                            "params": []
+                        }
+                    }
+                ]
+            }
+            
+            # Usar component name exacto del documento de referencia
+            component_name = exact_fingerprint["name"]
+            print(f"🔧 Usando component_name EXACTO del documento: {component_name[:50]}...")
+            
+            # URL del request
+            url = f"https://sica.sunagro.gob.ve/api/app/{component_name}"
+            print(f"🌐 Enviando request de búsqueda de vehículo a: {url}")
+            
+            # Log del payload completo
+            print(f"📦 Payload de búsqueda de vehículo:")
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+            
+            # Realizar request
+            response = self.session.post(url, json=payload, headers=headers)
+            
+            print(f"📊 Status Code: {response.status_code}")
+            print(f"📄 Response Headers: {dict(response.headers)}")
+            
+            if response.status_code == 200:
+                try:
+                    response_data = response.json()
+                    print(f"✅ Respuesta JSON recibida:")
+                    print(json.dumps(response_data, indent=2, ensure_ascii=False))
+                    
+                    # Guardar respuesta completa
+                    with open('busqueda_vehiculo_response.json', 'w', encoding='utf-8') as f:
+                        json.dump(response_data, f, indent=2, ensure_ascii=False)
+                    print("💾 Respuesta de búsqueda guardada en 'busqueda_vehiculo_response.json'")
+                    
+                    # Extraer vehículos de la respuesta
+                    server_memo = response_data.get('serverMemo', {})
+                    vehiculos_data = server_memo.get('data', {}).get('vehiculos', [])
+                    
+                    if vehiculos_data and len(vehiculos_data) > 0:
+                        vehiculo = vehiculos_data[0]  # Tomar el primer vehículo encontrado
+                        print(f"🎉 ¡Vehículo encontrado!")
+                        print(f"   🆔 ID: {vehiculo.get('id')}")
+                        print(f"   🚗 Placa: {vehiculo.get('placa')}")
+                        print(f"   🏭 Marca: {vehiculo.get('marca')}")
+                        print(f"   🎨 Color: {vehiculo.get('color', 'No especificado')}")
+                        
+                        return {
+                            'vehiculo': vehiculo,
+                            'response_data': response_data,
+                            'placa_buscada': placa
+                        }
+                    else:
+                        print("❌ No se encontraron vehículos con esa placa")
+                        return None
+                        
+                except json.JSONDecodeError as e:
+                    print(f"❌ Error al decodificar JSON: {e}")
+                    print(f"📄 Respuesta raw: {response.text[:500]}...")
+                    return None
+            else:
+                print(f"❌ Error HTTP {response.status_code}:")
+                print(response.text[:1000])
+                
+                # Guardar respuesta de error
+                with open('error_busqueda_vehiculo.html', 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                print("💾 Respuesta de error guardada en 'error_busqueda_vehiculo.html'")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error buscando vehículo: {e}")
+            return None
+
+    def proceso_busqueda_vehiculo(self, component_data):
+        """Proceso completo de búsqueda de vehículo por placa"""
+        print("\n" + "="*50)
+        print("🚗 PROCESO DE BÚSQUEDA DE VEHÍCULO")
+        print("="*50)
+        
+        # Verificar que haya empresa y conductor seleccionados
+        if not component_data:
+            print("❌ Error: No hay datos de componente disponibles")
+            return None
+        
+        server_memo = component_data.get("serverMemo", {})
+        empresa_seleccionada = server_memo.get('data', {}).get('data', {}).get('THd2VHJ1QzNOWDVoUjlBRGZaSzIrZz09')
+        conductor_seleccionado = server_memo.get('data', {}).get('data', {}).get('MkNMdzRrM0JqeUUxUm1lWUJoNmFZQT09')
+        
+        if not empresa_seleccionada:
+            print("❌ Error: Debe seleccionar una empresa antes de buscar vehículo")
+            return None
+            
+        if not conductor_seleccionado:
+            print("❌ Error: Debe seleccionar un conductor antes de buscar vehículo")
+            return None
+        
+        print(f"✅ Empresa seleccionada verificada: {empresa_seleccionada}")
+        print(f"✅ Conductor seleccionado verificado: {conductor_seleccionado}")
+        
+        # Pedir placa de vehículo por consola
+        while True:
+            try:
+                placa_input = input("\n🚗 Ingresa la placa del vehículo (ej: A22AK2C): ").strip().upper()
+                
+                if placa_input:
+                    # Validar formato básico de placa (6-9 caracteres alfanuméricos)
+                    import re
+                    if re.match(r'^[A-Z0-9]{6,9}$', placa_input):
+                        print(f"🔧 Placa formateada: {placa_input}")
+                        break
+                    else:
+                        print("❌ Formato de placa inválido. Use formato alfanumérico de 6-9 caracteres (ej: A22AK2C)")
+                        continue
+                else:
+                    print("❌ Por favor ingresa una placa válida")
+            except KeyboardInterrupt:
+                print("\n❌ Operación cancelada")
+                return None
+        
+        # Buscar vehículo
+        print(f"\n🔍 Buscando vehículo con placa: {placa_input}")
+        vehiculo_result = self.search_vehiculo_por_placa(placa_input, component_data)
+        
+        if vehiculo_result:
+            print("🎉 ¡Vehículo encontrado exitosamente!")
+            
+            # Mostrar información del vehículo encontrado
+            vehiculo = vehiculo_result.get('vehiculo', {})
+            print(f"\n📋 Vehículo encontrado:")
+            print(f"   🆔 ID: {vehiculo.get('id')}")
+            print(f"   🚗 Placa: {vehiculo.get('placa')}")
+            print(f"   🏭 Marca: {vehiculo.get('marca')}")
+            print(f"   🎨 Color: {vehiculo.get('color', 'No especificado')}")
+            
+            # Guardar resultado completo
+            complete_result = {
+                'vehiculo': vehiculo,
+                'search_response': vehiculo_result.get('response_data'),
+                'component_data': component_data,
+                'placa_buscada': placa_input,
+                'estado': 'ENCONTRADO'
+            }
+            
+            with open('vehiculo_encontrado.json', 'w', encoding='utf-8') as f:
+                json.dump(complete_result, f, indent=2, ensure_ascii=False)
+            print("💾 Resultado completo guardado en 'vehiculo_encontrado.json'")
+            
+            print(f"\n🎉 Proceso de vehículo exitoso:")
+            print(f"   🆔 ID: {vehiculo.get('id')}")
+            print(f"   🚗 Placa: {vehiculo.get('placa')}")
+            print(f"   🏭 Marca: {vehiculo.get('marca')}")
+            print(f"   🎨 Color: {vehiculo.get('color', 'No especificado')}")
+            print(f"   ✅ Estado: ENCONTRADO")
+            
+            print(f"\n🎯 ¡Vehículo encontrado exitosamente!")
+            print(f"   📋 El vehículo está listo para el siguiente paso del proceso")
+            
+            return complete_result
+        else:
+            print("❌ No se encontró vehículo o error en búsqueda")
+            return None
+
     def proceso_busqueda_conductor(self, component_data):
         """Proceso de solo búsqueda de conductor (sin selección automática)"""
         return self.proceso_busqueda_y_seleccion_conductor(component_data)
@@ -1428,6 +1709,35 @@ def main():
                                 if estado == 'SELECCIONADO':
                                     print("\n🎯 ¡Conductor seleccionado exitosamente!")
                                     print("   📋 El conductor está listo para el siguiente paso del proceso")
+                                    
+                                    # Proceso de búsqueda de vehículo (después de seleccionar conductor)
+                                    print("\n" + "="*50)
+                                    print("🚗 BÚSQUEDA DE VEHÍCULO")
+                                    print("="*50)
+                                    
+                                    component_data_vehiculo = resultado_conductor.get('component_data')
+                                    if component_data_vehiculo:
+                                        resultado_vehiculo = bot.proceso_busqueda_vehiculo(component_data_vehiculo)
+                                        
+                                        if resultado_vehiculo:
+                                            vehiculo = resultado_vehiculo['vehiculo']
+                                            
+                                            print(f"\n🎉 Proceso de vehículo exitoso:")
+                                            print(f"   🆔 ID: {vehiculo.get('id')}")
+                                            print(f"   🚗 Placa: {vehiculo.get('placa')}")
+                                            print(f"   🏭 Marca: {vehiculo.get('marca')}")
+                                            print(f"   🎨 Color: {vehiculo.get('color', 'No especificado')}")
+                                            print(f"   ✅ Estado: ENCONTRADO")
+                                            
+                                            print("\n🎯 ¡Vehículo encontrado exitosamente!")
+                                            print("   📋 El vehículo está listo para el siguiente paso del proceso")
+                                            
+                                            print(f"\n✅ Proceso de vehículo completado - Estado: ENCONTRADO")
+                                        else:
+                                            print("❌ No se encontró vehículo o error en búsqueda")
+                                    else:
+                                        print("❌ Error: No se pudo obtener component_data para búsqueda de vehículo")
+                                        
                                 elif estado == 'ENCONTRADO_NO_SELECCIONADO':
                                     print("\n⚠️ Conductor encontrado pero no seleccionado")
                                     print("   📋 Para continuar, deberá seleccionar un conductor")
